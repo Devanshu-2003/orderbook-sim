@@ -2,10 +2,26 @@
 #include <iostream>
 #include "obsim/orderbook.hpp"
 #include "obsim/replay.hpp"
+#include <exception>
+#include <string>
+#include "obsim/generator.hpp"
 
 int main(int argc, char** argv) {
+    if (argc >= 3 && std::string(argv[1]) == "--generate") {
+        try {
+            obsim::GeneratorConfig cfg;
+            cfg.count = std::stoull(argv[2]);
+            if (argc >= 4) cfg.seed = static_cast<unsigned>(std::stoul(argv[3]));
+            obsim::generateEvents(cfg, std::cout);
+            return 0;
+        } catch (const std::exception&) {
+            std::cerr << "usage: " << argv[0] << " --generate <count> [seed]\n";
+            return 1;
+        }
+    }
     if (argc != 2) {
-        std::cerr << "usage: " << argv[0] << " <events.csv>\n";
+        std::cerr << "usage: " << argv[0] << " <events.csv>\n"
+                  << "       " << argv[0] << " --generate <count> [seed] > events.csv\n";
         return 1;
     }
     std::ifstream file(argv[1]);

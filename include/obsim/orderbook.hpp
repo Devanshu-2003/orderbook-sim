@@ -9,6 +9,7 @@
 #include "obsim/orders.hpp"
 #include "obsim/trade.hpp"
 #include "obsim/types.hpp"
+#include <cstdint>
 
 namespace obsim {
 
@@ -28,6 +29,8 @@ public:
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;
     std::size_t restingOrderCount() const { return index_.size(); }
+    std::uint64_t restingQuantity() const;   // total qty across all resting orders
+    bool validate() const;              // internal consistency check (used by tests)
 
 private:
     // Remembers where a resting order lives, so cancel can find it in O(1).

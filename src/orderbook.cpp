@@ -4,6 +4,38 @@
 
 namespace obsim {
 
+std::uint64_t OrderBook::restingQuantity() const {
+    std::uint64_t total = 0;
+    for (const auto& entry : bids_) total += entry.second.totalQty;
+    for (const auto& entry : asks_) total += entry.second.totalQty;
+    return total;
+}
+
+bool OrderBook::validate() const {
+    std::size_t count = 0;
+
+    auto checkSide = [&](const auto& side, Side expectedSide) {
+        for (const auto& entry : side) {
+            const PriceLevel& level = entry.second;
+            if (level.orders.empty()) return false;            // empty levels must be erased
+            Quantity sum = 0;
+            for (const Order& o : level.orders) {
+                if (o.qty == 0 || o.price != entry.first || o.side != expectedSide) return false;
+                const auto found = index_.find(o.id);
+                if (found == index_.end() || &*found->second.it != &o) return false;
+                sum += o.qty;
+                ++count;
+            }
+            if (sum != level.totalQty) return false;
+        }
+        return true;
+    };
+
+    return checkSide(bids_, Side::Buy) && checkSide(asks_, Side::Sell) &&
+           count == index_.size();
+}
+
+
 namespace {
 
 // Remove one resting order from its price level; drop the level if it empties.

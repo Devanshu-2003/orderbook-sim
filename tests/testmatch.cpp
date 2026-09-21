@@ -2,7 +2,7 @@
 #include "obsim/orderbook.hpp"
 #include <sstream>
 #include "obsim/replay.hpp"
-
+#include "obsim/generator.hpp"
 using namespace obsim;
 
 TEST(Matching, BuyCrossesRestingSell) {
@@ -144,4 +144,36 @@ TEST(Replay, RunsEventsAndCountsTrades) {
     EXPECT_EQ(s.cancelMisses, 1u);
     EXPECT_EQ(s.badLines, 1u);
     EXPECT_EQ(out.str(), "TRADE buy=2 sell=1 price=52.00 qty=100\n");
+}
+
+TEST(Generator, SameSeedProducesIdenticalOutput) {
+    GeneratorConfig cfg;
+    cfg.count = 2000;
+    cfg.seed = 7;
+    std::ostringstream a, b, c;
+    generateEvents(cfg, a);
+    generateEvents(cfg, b);
+    EXPECT_EQ(a.str(), b.str());
+    cfg.seed = 8;
+    generateEvents(cfg, c);
+    EXPECT_NE(a.str(), c.str());
+}
+
+TEST(Generator, OutputReplaysWithoutErrors) {
+    GeneratorConfig cfg;
+    cfg.count = 20000;
+    cfg.seed = 3;
+    std::ostringstream gen;
+    generateEvents(cfg, gen);
+
+    std::istringstream in(gen.str());
+    std::ostringstream trades;
+    OrderBook book;
+    ReplayStats s = replayCsv(in, book, trades);
+
+    EXPECT_EQ(s.events, 20000u);
+    EXPECT_EQ(s.badLines, 0u);
+    EXPECT_EQ(s.cancelMisses, 0u);   // shadow book guarantees valid cancels
+    EXPECT_GT(s.trades, 100u);       // the flow really does cross and trade
+    EXPECT_TRUE(book.validate());
 }
