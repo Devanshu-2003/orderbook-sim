@@ -1,0 +1,9 @@
+# type,id,side,ordertype,price,qty
+N,1,S,L,5200,100
+N,2,S,L,5205,150
+N,3,B,L,5190,200
+N,4,B,L,5200,60
+C,3
+N,5,B,M,0,200
+N,6,S,L,5195,50
+C,999

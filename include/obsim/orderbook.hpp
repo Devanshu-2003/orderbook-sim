@@ -22,6 +22,8 @@ class OrderBook {
 public:
     // Submit an order; returns any trades it caused.
     std::vector<Trade> addOrder(Order order);
+    // Cancel a resting order. Returns false if the ID isn't in the book.
+    bool cancelOrder(OrderId id);
 
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;

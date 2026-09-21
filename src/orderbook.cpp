@@ -4,6 +4,22 @@
 
 namespace obsim {
 
+namespace {
+
+// Remove one resting order from its price level; drop the level if it empties.
+template <typename BookSide>
+void removeResting(BookSide& side, Price price, std::list<Order>::iterator it) {
+    auto levelIt = side.find(price);
+    PriceLevel& level = levelIt->second;
+    level.totalQty -= it->qty;
+    level.orders.erase(it);
+    if (level.orders.empty()) {
+        side.erase(levelIt);
+    }
+}
+
+}  // namespace
+
 std::vector<Trade> OrderBook::addOrder(Order order) {
     std::vector<Trade> trades;
 
@@ -20,6 +36,21 @@ std::vector<Trade> OrderBook::addOrder(Order order) {
         rest(order);
     }
     return trades;
+}
+
+bool OrderBook::cancelOrder(OrderId id) {
+    auto found = index_.find(id);
+    if (found == index_.end()) {
+        return false;                 // unknown, already filled, or already cancelled
+    }
+    const Locator loc = found->second;
+    if (loc.side == Side::Buy) {
+        removeResting(bids_, loc.price, loc.it);
+    } else {
+        removeResting(asks_, loc.price, loc.it);
+    }
+    index_.erase(found);
+    return true;
 }
 
 template <typename BookSide>
