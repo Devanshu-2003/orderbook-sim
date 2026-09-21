@@ -10,7 +10,10 @@ struct ReplayStats {
     std::uint64_t events = 0;
     std::uint64_t newOrders = 0;
     std::uint64_t cancels = 0;
-    std::uint64_t cancelMisses = 0;   // cancel of an unknown or already-gone ID
+    std::uint64_t cancelMisses = 0;
+    std::uint64_t rejectedDuplicate = 0;
+    std::uint64_t rejectedZeroQty = 0;
+    std::uint64_t rejectedBadPrice = 0;   // cancel of an unknown or already-gone ID
     std::uint64_t trades = 0;
     std::uint64_t volume = 0;         // total quantity traded
     std::uint64_t badLines = 0;       // malformed input lines (skipped)

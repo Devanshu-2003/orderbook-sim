@@ -3,6 +3,7 @@
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "obsim/orderbook.hpp"
 
 using namespace obsim;
@@ -39,7 +40,15 @@ TEST(Invariants, RandomOrderFlowKeepsBookConsistent) {
             SCOPED_TRACE("seed " + std::to_string(seed) + ", step " + std::to_string(step));
             const int roll = percent(rng);
 
-            if (roll < 30) {
+            if (roll < 5 && !m.live.empty()) {
+                // Resubmit an ID that is currently resting: must be rejected, changing nothing.
+                const OrderId dup = m.live.begin()->first;
+                std::vector<Trade> none;
+                ASSERT_EQ(book.addOrder({dup, Side::Buy, OrderType::Limit,
+                                         priceDist(rng), qtyDist(rng), ++seq}, none),
+                          RejectReason::DuplicateId);
+                ASSERT_TRUE(none.empty());
+            } else if (roll < 30) {
                 // Cancel a random ID (sometimes live, sometimes filled/never existed).
                 std::uniform_int_distribution<OrderId> idDist(1, nextId);
                 const OrderId id = idDist(rng);

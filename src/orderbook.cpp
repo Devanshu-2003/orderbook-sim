@@ -52,10 +52,17 @@ void removeResting(BookSide& side, Price price, std::list<Order>::iterator it) {
 
 }  // namespace
 
-std::vector<Trade> OrderBook::addOrder(Order order) {
-    std::vector<Trade> trades;
+RejectReason OrderBook::validateOrder(const Order& order) const {
+    if (order.qty == 0) return RejectReason::ZeroQuantity;
+    if (order.type == OrderType::Limit && order.price <= 0) return RejectReason::InvalidPrice;
+    if (index_.find(order.id) != index_.end()) return RejectReason::DuplicateId;
+    return RejectReason::None;
+}
 
-    // A buy matches against sellers (asks); a sell matches against buyers (bids).
+RejectReason OrderBook::addOrder(Order order, std::vector<Trade>& trades) {
+    const RejectReason reason = validateOrder(order);
+    if (reason != RejectReason::None) return reason;   // book untouched
+
     if (order.side == Side::Buy) {
         matchAgainst(order, asks_, trades);
     } else {
@@ -67,6 +74,12 @@ std::vector<Trade> OrderBook::addOrder(Order order) {
     if (order.qty > 0 && order.type == OrderType::Limit) {
         rest(order);
     }
+    return RejectReason::None;
+}
+
+std::vector<Trade> OrderBook::addOrder(Order order) {
+    std::vector<Trade> trades;
+    addOrder(order, trades);
     return trades;
 }
 

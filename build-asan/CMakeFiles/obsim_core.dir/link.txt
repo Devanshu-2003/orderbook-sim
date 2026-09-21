@@ -1,0 +1,2 @@
+/usr/bin/ar qc libobsim_core.a CMakeFiles/obsim_core.dir/src/orderbook.cpp.o CMakeFiles/obsim_core.dir/src/replay.cpp.o CMakeFiles/obsim_core.dir/src/generator.cpp.o
+/usr/bin/ranlib libobsim_core.a

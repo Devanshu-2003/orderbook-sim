@@ -3,6 +3,7 @@
 #include <sstream>
 #include "obsim/replay.hpp"
 #include "obsim/generator.hpp"
+#include <vector>
 using namespace obsim;
 
 TEST(Matching, BuyCrossesRestingSell) {
@@ -176,4 +177,80 @@ TEST(Generator, OutputReplaysWithoutErrors) {
     EXPECT_EQ(s.cancelMisses, 0u);   // shadow book guarantees valid cancels
     EXPECT_GT(s.trades, 100u);       // the flow really does cross and trade
     EXPECT_TRUE(book.validate());
+}
+
+TEST(Validation, DuplicateRestingIdIsRejectedAndBookStaysIntact) {
+    OrderBook book;
+    std::vector<Trade> trades;
+    ASSERT_EQ(book.addOrder({1, Side::Sell, OrderType::Limit, 5200, 100, 1}, trades),
+              RejectReason::None);
+
+    // Same ID again, other side, crossing price: must be rejected, not matched or rested.
+    EXPECT_EQ(book.addOrder({1, Side::Buy, OrderType::Limit, 5300, 50, 2}, trades),
+              RejectReason::DuplicateId);
+    EXPECT_TRUE(trades.empty());
+    EXPECT_EQ(book.restingOrderCount(), 1u);
+    EXPECT_FALSE(book.bestBid().has_value());
+    EXPECT_TRUE(book.validate());
+
+    // The original order is still cancellable, and the book ends up empty.
+    EXPECT_TRUE(book.cancelOrder(1));
+    EXPECT_EQ(book.restingOrderCount(), 0u);
+    EXPECT_FALSE(book.bestAsk().has_value());
+}
+
+TEST(Validation, ZeroQuantityIsRejected) {
+    OrderBook book;
+    std::vector<Trade> trades;
+    EXPECT_EQ(book.addOrder({1, Side::Buy, OrderType::Limit, 5200, 0, 1}, trades),
+              RejectReason::ZeroQuantity);
+    EXPECT_EQ(book.addOrder({2, Side::Sell, OrderType::Market, 0, 0, 2}, trades),
+              RejectReason::ZeroQuantity);
+    EXPECT_EQ(book.restingOrderCount(), 0u);
+}
+
+TEST(Validation, NonPositiveLimitPriceRejectedButMarketPriceIgnored) {
+    OrderBook book;
+    std::vector<Trade> trades;
+    EXPECT_EQ(book.addOrder({1, Side::Buy, OrderType::Limit, 0, 10, 1}, trades),
+              RejectReason::InvalidPrice);
+    EXPECT_EQ(book.addOrder({2, Side::Buy, OrderType::Limit, -5, 10, 2}, trades),
+              RejectReason::InvalidPrice);
+    // A market order's price field is unused, so 0 is fine.
+    EXPECT_EQ(book.addOrder({3, Side::Buy, OrderType::Market, 0, 10, 3}, trades),
+              RejectReason::None);
+    EXPECT_EQ(book.restingOrderCount(), 0u);
+}
+
+TEST(Validation, IdCanBeReusedOnceOrderIsGone) {
+    OrderBook book;
+    std::vector<Trade> trades;
+    book.addOrder({1, Side::Sell, OrderType::Limit, 5200, 100, 1}, trades);
+    book.addOrder({2, Side::Buy,  OrderType::Limit, 5200, 100, 2}, trades);  // fills order 1
+    ASSERT_EQ(book.restingOrderCount(), 0u);
+
+    EXPECT_EQ(book.addOrder({1, Side::Sell, OrderType::Limit, 5300, 10, 3}, trades),
+              RejectReason::None);
+    EXPECT_EQ(book.restingOrderCount(), 1u);
+}
+
+TEST(Replay, CountsRejectsAndTreatsNegativeNumbersAsBadLines) {
+    std::istringstream input(
+        "N,1,S,L,5200,100\n"
+        "N,1,B,L,5300,50\n"     // duplicate id
+        "N,2,B,L,5200,0\n"      // zero quantity
+        "N,3,B,L,0,10\n"        // limit price 0
+        "N,4,B,L,5200,-5\n"     // negative quantity -> malformed line
+        "N,-7,B,L,5200,5\n");   // negative id -> malformed line
+    std::ostringstream out;
+    OrderBook book;
+    ReplayStats s = replayCsv(input, book, out);
+
+    EXPECT_EQ(s.events, 6u);
+    EXPECT_EQ(s.rejectedDuplicate, 1u);
+    EXPECT_EQ(s.rejectedZeroQty, 1u);
+    EXPECT_EQ(s.rejectedBadPrice, 1u);
+    EXPECT_EQ(s.badLines, 2u);
+    EXPECT_EQ(s.trades, 0u);
+    EXPECT_EQ(book.restingOrderCount(), 1u);   // only the first order rests
 }

@@ -1,0 +1,5 @@
+if(EXISTS "/Users/devanshuchudhary/Desktop/orderbook-sim/build-asan/tests/test_invariants_e3b0c442_tests.cmake")
+  include("/Users/devanshuchudhary/Desktop/orderbook-sim/build-asan/tests/test_invariants_e3b0c442_tests.cmake")
+else()
+  add_test(test_invariants_NOT_BUILT test_invariants_NOT_BUILT)
+endif()

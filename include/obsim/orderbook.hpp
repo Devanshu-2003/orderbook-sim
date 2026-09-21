@@ -13,6 +13,12 @@
 
 namespace obsim {
 
+enum class RejectReason {
+    None,
+    DuplicateId,     // an order with this ID is already resting
+    ZeroQuantity,
+    InvalidPrice     // limit order with price <= 0
+};
 // All resting orders at one price, oldest first (FIFO = time priority).
 struct PriceLevel {
     std::list<Order> orders;
@@ -22,7 +28,15 @@ struct PriceLevel {
 class OrderBook {
 public:
     // Submit an order; returns any trades it caused.
+    // Validates, matches, and appends any trades to `trades`.
+    // Returns why the order was rejected, or None if it was accepted.
+    RejectReason addOrder(Order order, std::vector<Trade>& trades);
+
+    // Convenience form: returns the trades. A rejected order yields none.
     std::vector<Trade> addOrder(Order order);
+
+    // The checks addOrder applies, exposed so callers and tests can use them.
+    RejectReason validateOrder(const Order& order) const;
     // Cancel a resting order. Returns false if the ID isn't in the book.
     bool cancelOrder(OrderId id);
 

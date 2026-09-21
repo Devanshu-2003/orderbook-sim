@@ -1,0 +1,5 @@
+if(EXISTS "/Users/devanshuchudhary/Desktop/orderbook-sim/build-asan/tests/test_matching_e3b0c442_tests.cmake")
+  include("/Users/devanshuchudhary/Desktop/orderbook-sim/build-asan/tests/test_matching_e3b0c442_tests.cmake")
+else()
+  add_test(test_matching_NOT_BUILT test_matching_NOT_BUILT)
+endif()

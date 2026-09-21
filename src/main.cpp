@@ -37,6 +37,9 @@ int main(int argc, char** argv) {
               << "events: " << s.events << "  (new " << s.newOrders
               << ", cancels " << s.cancels << ", cancel misses " << s.cancelMisses
               << ", bad lines " << s.badLines << ")\n"
+              << "rejected: duplicate id " << s.rejectedDuplicate
+              << ", zero qty " << s.rejectedZeroQty
+              << ", bad price " << s.rejectedBadPrice << '\n'
               << "trades: " << s.trades << "  volume: " << s.volume << '\n'
               << "resting orders: " << book.restingOrderCount() << '\n'
               << "best bid: "
