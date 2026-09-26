@@ -43,6 +43,7 @@ public:
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;
     std::size_t restingOrderCount() const { return index_.size(); }
+    void reserveOrders(std::size_t n) { index_.reserve(n); }
     std::uint64_t restingQuantity() const;   // total qty across all resting orders
     bool validate() const;              // internal consistency check (used by tests)
 

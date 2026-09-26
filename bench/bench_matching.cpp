@@ -84,6 +84,7 @@ void report(const char* name, std::vector<std::uint64_t>& v) {
 int main(int argc, char** argv) {
     const std::uint64_t count = (argc >= 2) ? std::stoull(argv[1]) : 1000000;
     const unsigned seed = (argc >= 3) ? static_cast<unsigned>(std::stoul(argv[2])) : 1;
+    const bool reserve = (argc >= 4 && std::string(argv[3]) == "reserve");
 
 #ifndef NDEBUG
     std::cout << "WARNING: Debug build - these numbers are meaningless. Build with Release.\n";
@@ -106,6 +107,7 @@ int main(int argc, char** argv) {
 
     // Per-operation latency pass.
     OrderBook book;
+    if (reserve) book.reserveOrders(1 << 20);
     std::vector<std::uint64_t> addNs, cancelNs;
     addNs.reserve(events.size());
     cancelNs.reserve(events.size());
