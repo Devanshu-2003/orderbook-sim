@@ -1,5 +1,5 @@
 build/
+build-*/
 .vscode/
 .DS_Store
 data/generated_*.csv
-build-release/
